@@ -14,6 +14,7 @@ class SuperHeroes {
             Video("Despechada", "Rosalia", R.raw.despechada),
             Video("Blindside", "James Arthur", R.raw.blindside),
             Video("Paint town to red", "Doja cat", R.raw.paint),
+            Video("prueba","prueba down quality", R.raw.pruebalowquality)
         )
 
 
