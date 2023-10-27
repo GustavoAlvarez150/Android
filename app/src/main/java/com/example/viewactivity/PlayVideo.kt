@@ -1,5 +1,6 @@
 package com.example.viewactivity
 
+import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -26,6 +27,28 @@ class PlayVideo : AppCompatActivity() {
 
     var videoView: VideoView? = null
 
+    companion object {
+        var setTime : Int = 1
+    }
+    override fun onPause() {
+        super.onPause()
+
+        var positionVideoMus = videoView!!.currentPosition
+
+        var aux = PlayVideo.setTime
+    }
+
+    override fun onResume() {
+        super.onResume()
+        var aux = 1
+        videoView!!.seekTo(PlayVideo.setTime)
+
+        videoView!!.setOnPreparedListener {
+
+
+        }
+        videoView!!.start()
+    }
 
     private lateinit var binding: ActivityPlayVideoBinding
     var mediaController: MediaController? = null
@@ -49,7 +72,8 @@ class PlayVideo : AppCompatActivity() {
 
         var getTimeRandom = 0
         var getTimeEnd = 0
-      var lastVideoPlay =  lifecycleScope.launch(Dispatchers.Main) {
+        var myContex = this
+      lifecycleScope.launch(Dispatchers.Main) {
 
           playVideo(videoPath)
           //se obtiene la duracion del video
@@ -63,54 +87,20 @@ class PlayVideo : AppCompatActivity() {
 
               lifecycleScope.launch(Dispatchers.Main){
                   getTimeEnd = counPlayAdds(getTimeRandom)
-
+                    //Enviamos el path del anuncio al nuevo activity
                   if (getTimeEnd == 0) {
-                      lifecycleScope.launch(Dispatchers.Main) {
-                          playVideo(pathViodeoAdds)
-                          countBtn()
-                          //Una vez que termina de reproducirse el anuncio saltará a reproducirse nuevamente el video musical
-                          lifecycleScope.launch(Dispatchers.Main) {
-                              videoView!!.setOnCompletionListener {
-                                  //Se reproduce el video musical, una vez que termina el anuncio
-                                  lifecycleScope.launch(Dispatchers.Main) {
-                                      playVideo(videoPath)
-                                      videoView!!.seekTo(getTimeRandom)
-                                      binding.skipBtn.isEnabled = false
+                      PlayVideo.setTime = getTimeRandom
 
-                                  }
-                              }
-                          }
+                      val inte = Intent(myContex, adds::class.java).apply {
+
+                          putExtra("pathAdds", pathViodeoAdds)
                       }
+
+                      startActivity(inte)
                   }
-
               }
-
-
           }
         }
-
-        binding.skipBtn.setOnClickListener {
-            lastVideoPlay.cancel()
-
-            GlobalScope.launch(Dispatchers.Main) {
-                playVideo(videoPath)
-                videoView!!.seekTo(getTimeRandom)
-            }
-        }
-
-
-        /*  adds = GlobalScope.launch(Dispatchers.Main) {
-              playVideo(pathViodeoAdds)
-              //Una vez que termine el anuncio, reproduce el video
-              videoView!!.setOnCompletionListener {
-                  GlobalScope.launch(Dispatchers.Main) {
-                      //Deshabilitamos el botón para saltar el anuncio
-                      binding.skipBtn.isEnabled = false
-                      playVideo(videoPath)
-                  }
-              }
-          }*/
-
     }
 
     //contamos los segundos en los cuales aparecerá el anuncio, para después
@@ -129,22 +119,6 @@ class PlayVideo : AppCompatActivity() {
         var rando = Random(System.nanoTime())
         var getTimeRandom = (0..endTimeRandom).random(rando)
         return getTimeRandom
-    }
-
-
-    //Decremento de 5 a 0 para mostrar en botón
-    suspend fun countBtn() {
-        var count: Int = 5
-
-        while (count >= 0) {
-            binding.skipBtn.text = "Saltar anuncio en " + count--
-            delay(1000)
-            //habilitamos el botón cuando el contador haya llegado a cero
-            if (count == 0) {
-                binding.skipBtn.isEnabled = true
-            }
-
-        }
     }
 
     //Reproduce un video

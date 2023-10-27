@@ -15,6 +15,9 @@
         android:theme="@style/Theme.ViewActivity"
         tools:targetApi="31">
         <activity
+            android:name=".adds"
+            android:exported="false" />
+        <activity
             android:name=".PlayVideo"
             android:exported="false" />
         <activity
