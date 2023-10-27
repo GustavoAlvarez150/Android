@@ -6,11 +6,15 @@ import android.os.Bundle
 import android.widget.MediaController
 import android.widget.Toast
 import android.widget.VideoView
+import androidx.lifecycle.lifecycleScope
 import com.example.viewactivity.databinding.ActivityPlayVideoBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -44,41 +48,54 @@ class PlayVideo : AppCompatActivity() {
         }
 
         var getTimeRandom = 0
-      var lastVideoPlay =  GlobalScope.launch(Dispatchers.Main) {
+        var getTimeEnd = 0
+      var lastVideoPlay =  lifecycleScope.launch(Dispatchers.Main) {
 
-            playVideo(videoPath)
-            //se obtiene la duracion del video
-            videoView!!.setOnPreparedListener { mp ->
-                val duration = videoView!!.duration
-                 getTimeRandom = generateTimeRandom(duration)
+          playVideo(videoPath)
+          //se obtiene la duracion del video
+          videoView!!.setOnPreparedListener { mp ->
 
-                //Ya obtenemos la duracion del video, generamos un tiempo aleatorio, y ya se puede iniciar el video en el tiempo aleatorio
-                //FLUJO: se reproduce el video musical, se pausa el video musical en el tiempo generado, y se reproduce el anuncio, y se vuelve a reproducir el video musical en el tiempo aleatorio generado
+              val duration = videoView!!.duration
+              getTimeRandom = generateTimeRandom(duration)
 
-                GlobalScope.launch(Dispatchers.Main) {
-                    var getTimeEnd = counPlayAdds(getTimeRandom)
+              //Ya obtenemos la duracion del video, generamos un tiempo aleatorio, y ya se puede iniciar el video en el tiempo aleatorio
+              //FLUJO: se reproduce el video musical, se pausa el video musical en el tiempo generado, y se reproduce el anuncio, y se vuelve a reproducir el video musical en el tiempo aleatorio generado
 
-                    if (getTimeEnd == 0) {
-                        playVideo(pathViodeoAdds)
-                        countBtn()
-                        //Se coloca el tiempo en milisegundos
-                        //videoView!!.seekTo(getTimeRandom)
+              lifecycleScope.launch(Dispatchers.Main){
+                  getTimeEnd = counPlayAdds(getTimeRandom)
 
-                    }
+                  if (getTimeEnd == 0) {
+                      lifecycleScope.launch(Dispatchers.Main) {
+                          playVideo(pathViodeoAdds)
+                          countBtn()
+                          //Una vez que termina de reproducirse el anuncio saltará a reproducirse nuevamente el video musical
+                          lifecycleScope.launch(Dispatchers.Main) {
+                              videoView!!.setOnCompletionListener {
+                                  //Se reproduce el video musical, una vez que termina el anuncio
+                                  lifecycleScope.launch(Dispatchers.Main) {
+                                      playVideo(videoPath)
+                                      videoView!!.seekTo(getTimeRandom)
+                                      binding.skipBtn.isEnabled = false
 
-                }
-            }
+                                  }
+                              }
+                          }
+                      }
+                  }
 
+              }
+
+
+          }
         }
 
         binding.skipBtn.setOnClickListener {
-            println(getTimeRandom)
             lastVideoPlay.cancel()
+
             GlobalScope.launch(Dispatchers.Main) {
                 playVideo(videoPath)
                 videoView!!.seekTo(getTimeRandom)
             }
-
         }
 
 
